@@ -4,8 +4,8 @@ from os import cpu_count
 test_cases = 10000000
 
 sequentialTime = sequential.run_sequentially(test_cases)
-parallelTime = threading.run_threads(test_cases)
-processTime = process.run_processes(test_cases)
+parallelTime, parallel_speedup = threading.run_threads(test_cases)
+processTime, process_speedup = process.run_processes(test_cases)
 
 print(f"Time analysis done according to {test_cases} items.")
 
@@ -35,3 +35,9 @@ eff_par_mlt = par_mlt_speedup / cores
 print(f"Efficiency of sequential to parallel: {eff_seq_par}")
 print(f"Efficiency of sequential to multiprocess: {eff_seq_mlt}")
 print(f"Efficiency of parallel to multiprocess: {eff_par_mlt}")
+
+print(f"Amdahl Parallel Speedup: {parallel_speedup}")
+print(f"Amdahl Process Speedup: {process_speedup}")
+
+print(f"Gustafsson Parallel Speedup: {cores - (1- par_seq_speedup) * (cores - 1)}")
+print(f"Gustafsson Process Speedup: {cores - (1- seq_prc_speedup) * (cores - 1)}")

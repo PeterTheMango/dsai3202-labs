@@ -14,6 +14,8 @@ def run_threads(num: int) -> float:
         float: Time it took for the functions to run (in seconds)
     """
     
+    total_start = time()
+    
     num_cores = cpu_count() 
     chunk_size = ceil(num / num_cores)
     chunks = [(i * chunk_size, min((i + 1) * chunk_size, num)) for i in range(num_cores)]
@@ -42,6 +44,11 @@ def run_threads(num: int) -> float:
     
     end = time()
     
-    timeTaken = end - start
+    time_taken = end - start
     
-    return timeTaken
+    total_end = time()
+    
+    total_time = total_end - total_start
+    speedup = time_taken/total_time
+    
+    return (time_taken, speedup)
