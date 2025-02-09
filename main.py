@@ -1,7 +1,7 @@
 from src import process,sequential, threading
 from os import cpu_count
 
-test_cases = 10000000
+test_cases = 100000000
 
 sequentialTime = sequential.run_sequentially(test_cases)
 parallelTime, parallel_speedup = threading.run_threads(test_cases)
