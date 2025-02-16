@@ -3,9 +3,14 @@ from os import cpu_count
 
 test_cases = 100000000
 
-sequentialTime = sequential.run_sequentially(test_cases)
-parallelTime, parallel_speedup = threading.run_threads(test_cases)
-processTime, process_speedup = process.run_processes(test_cases)
+sequentialTime, seq_total = sequential.run_sequentially(test_cases)
+parallelTime, parallel_speedup, par_total = threading.run_threads(test_cases)
+processTime, process_speedup, proc_total = process.run_processes(test_cases)
+
+print(f"=== Total Calculated ===")
+print(f"Sequential: {seq_total}")
+print(f"Parallel: {par_total}")
+print(f"Multiprocessing: {proc_total}")
 
 print(f"Time analysis done according to {test_cases} items.")
 

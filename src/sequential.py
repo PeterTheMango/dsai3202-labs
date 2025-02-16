@@ -11,8 +11,8 @@ def run_sequentially(num:int):
         float: Time it took for the functions to run (in seconds)
     """
     start = time()
-    sumNum(1, num)
+    total = sumNum(1, num, None)
     end = time()
     timeTaken = end - start
     
-    return timeTaken
+    return timeTaken, total

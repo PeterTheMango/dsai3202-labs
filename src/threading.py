@@ -3,6 +3,7 @@ from threading import Thread
 from src.functions import sumNum
 from math import ceil
 from os import cpu_count
+from queue import Queue
 
 def run_threads(num: int) -> float:
     """Computes the time it took for the program to run both functions.
@@ -19,6 +20,8 @@ def run_threads(num: int) -> float:
     num_cores = cpu_count()
     chunk_size = ceil(num / num_cores)
     chunks = [(i * chunk_size, min((i + 1) * chunk_size, num)) for i in range(num_cores)]
+
+    results = Queue()
     
     start = time()
     
@@ -26,7 +29,7 @@ def run_threads(num: int) -> float:
     
     for chunk in chunks:
         start_chunk, end_chunk = chunk
-        sumThread = Thread(target=sumNum, args=(start_chunk, end_chunk))
+        sumThread = Thread(target=sumNum, args=(start_chunk, end_chunk, results))
         sumThreads.append(sumThread)
         sumThread.start()
         
@@ -34,6 +37,10 @@ def run_threads(num: int) -> float:
         thread.join()
     
     end = time()
+
+    total = 0
+    while not results.empty():
+        total += results.get()
     
     time_taken = end - start
     
@@ -42,4 +49,4 @@ def run_threads(num: int) -> float:
     total_time = total_end - total_start
     speedup = time_taken/total_time
     
-    return (time_taken, speedup)
+    return (time_taken, speedup, total)

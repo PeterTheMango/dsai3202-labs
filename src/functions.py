@@ -1,7 +1,7 @@
 from random import choice, randint
 from string import ascii_letters
 
-def sumNum(start: int, end: int):
+def sumNum(start: int, end: int, queue):
     """
     Computes the sum of integers within a specified range.
 
@@ -10,6 +10,10 @@ def sumNum(start: int, end: int):
         end (int): The ending value of the range (inclusive).
 
     Returns:
-        int: The sum of all integers from `start` to `end`, inclusive.
+        None
     """
-    return sum(range(start, end + 1))
+    if(queue == None):
+        return sum(range(start, end + 1))
+    else:
+        ans = sum(range(start, end + 1))
+        queue.put(ans)
