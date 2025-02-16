@@ -15,5 +15,5 @@ def sumNum(start: int, end: int, queue):
     if(queue == None):
         return sum(range(start, end + 1))
     else:
-        ans = sum(range(start, end + 1))
+        ans = sum(range(start, end))
         queue.put(ans)

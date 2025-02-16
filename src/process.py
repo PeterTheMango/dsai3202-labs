@@ -19,8 +19,8 @@ def run_processes(num):
     
     num_cores = cpu_count()
     chunk_size = ceil(num / num_cores)
-    chunks = [(i * chunk_size, min((i + 1) * chunk_size, num)) for i in range(num_cores)]
-    
+    chunks = [(i * chunk_size, min((i + 1) * chunk_size, num + 1)) for i in range(num_cores)]
+
     results = Queue()
     
     start = time()
