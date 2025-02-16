@@ -1,7 +1,5 @@
-from random import choice, randint
-from string import ascii_letters
 from time import time
-from src.functions import joinChar, sumNum
+from src.functions import sumNum
 
 def run_sequentially(num:int):
     """Computes the time it took for the program to run both functions.
@@ -13,7 +11,6 @@ def run_sequentially(num:int):
         float: Time it took for the functions to run (in seconds)
     """
     start = time()
-    joinChar(1, num)
     sumNum(1, num)
     end = time()
     timeTaken = end - start

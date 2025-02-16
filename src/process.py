@@ -2,7 +2,7 @@ from time import time
 from multiprocessing import Process
 from os import cpu_count
 from math import ceil
-from src.functions import joinChar, sumNum
+from src.functions import sumNum
 
 
 def run_processes(num):
@@ -24,21 +24,12 @@ def run_processes(num):
     start = time()
     
     sum_processes = []
-    char_processes = []
     
     for chunk in chunks:
         start_chunk, end_chunk = chunk
-        char_process = Process(target=joinChar, args=(start_chunk, end_chunk))
-        char_processes.append(char_process)
-        char_process.start()
-        
         sum_process = Process(target=sumNum, args=(start_chunk, end_chunk))
-        sum_processes.append(char_process)
+        sum_processes.append(sum_process)
         sum_process.start()
-
-    
-    for proc in char_processes:
-        proc.join()
         
     for proc in sum_processes:
         proc.join()

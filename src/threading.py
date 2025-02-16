@@ -1,6 +1,6 @@
 from time import time
 from threading import Thread
-from src.functions import joinChar, sumNum
+from src.functions import sumNum
 from math import ceil
 from os import cpu_count
 
@@ -23,21 +23,12 @@ def run_threads(num: int) -> float:
     start = time()
     
     sumThreads = []
-    charThreads = []
     
     for chunk in chunks:
         start_chunk, end_chunk = chunk
-        charThread = Thread(target=joinChar, args=(start_chunk, end_chunk))
-        charThreads.append(charThread)
-        charThread.start()
-        
         sumThread = Thread(target=sumNum, args=(start_chunk, end_chunk))
-        sumThreads.append(charThread)
+        sumThreads.append(sumThread)
         sumThread.start()
-
-    
-    for thread in charThreads:
-        thread.join()
         
     for thread in sumThreads:
         thread.join()
