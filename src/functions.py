@@ -2,106 +2,163 @@ import time
 import threading
 import sys
 import random
+import queue
 
 lock = threading.RLock()
 condition = threading.Condition(lock)
+MAX_QUEUE_SIZE = 15
 
-def simulate_sensor(recorded_temps: dict[list]) -> None:
+def simulate_sensor(num_sensors: int, latest_temperatures: dict[int, int], temperature_queues: dict[int, queue.Queue]) -> None:
     """
-        Simulates temperature readings from multiple sensors and updates the shared data structure.
-
-        Each sensor generates a random temperature reading between 15°C and 40°C every second.
-        The function acquires a lock to safely modify the shared `recorded_temps` dictionary.
-        Once updated, it signals `process_temperatures` that new data is available.
-
-        Args:
-            recorded_temps (dict[list]): A dictionary where each key represents a sensor ID,
-                                         and each value is a list of recorded temperature readings.
-
-        Synchronization:
-            - Uses `lock` (RLock) to ensure thread-safe access to `recorded_temps`.
-            - Calls `condition.notify_all()` to wake up the processing thread.
-        """
+    Simulates temperature sensors by generating random temperatures.
+    
+    Args:
+        num_sensors (int): Number of sensors to simulate.
+        latest_temperatures (dict[int, int]): Dictionary to store latest temperatures.
+        temperature_queues (dict[int, queue.Queue]): Dictionary of queues storing temperature readings.
+    
+    Returns:
+        None
+    """
+    time.sleep(3)  # Simulating sensor connection and startup.
+    
     while True:
         with lock:
-            for sensor_number in recorded_temps.keys():
-                recorded_temps[sensor_number].append(random.randint(15, 40))
+            for sensor_number in range(num_sensors):
+                temp = random.randint(15, 40)
+                latest_temperatures[sensor_number] = temp
+                
+                if temperature_queues[sensor_number].qsize() >= MAX_QUEUE_SIZE:
+                    temperature_queues[sensor_number].get()
+                
+                temperature_queues[sensor_number].put(temp)
             condition.notify_all()
         time.sleep(1)
 
 def avg(nums: list[int]) -> float:
     """
-        Computes the average of a list of numbers, rounded to two decimal places.
-
-        If the list is empty, it returns 0.00 to prevent division errors.
-
-        Args:
-            nums (list[int]): A list of numerical values.
-
-        Returns:
-            float: The average of the list rounded to two decimal places.
-        """
+    Computes the average of a list of numbers.
+    
+    Args:
+        nums (list[int]): List of temperature readings.
+    
+    Returns:
+        float: The average temperature rounded to 2 decimal places.
+    """
     return round(sum(nums) / len(nums) if nums else 0, 2)
 
-def process_temperatures(recorded_temps: dict, temperature_avg: dict) -> None:
+def process_temperatures(temperature_queues: dict[int, queue.Queue], temperature_averages: dict[int, float]) -> None:
     """
-        Waits for new temperature readings and updates the average temperature for each sensor.
-
-        The function remains in a loop, waiting for a signal from `simulate_sensor` indicating
-        that new temperature data is available. Once signaled, it calculates and updates
-        the average temperature for each sensor.
-
-        Args:
-            recorded_temps (dict): A dictionary mapping sensor IDs to lists of recorded temperatures.
-            temperature_avg (dict): A dictionary mapping sensor IDs to their computed average temperatures.
-
-        Synchronization:
-            - Uses `condition.wait()` to pause until new data is available.
-            - Uses `lock` (via `condition`) to ensure thread-safe access to shared data.
-        """
+    Processes temperature data by computing averages from sensor queues.
+    
+    Args:
+        temperature_queues (dict[int, queue.Queue]): Dictionary of temperature queues.
+        temperature_averages (dict[int, float]): Dictionary storing average temperatures.
+    
+    Returns:
+        None
+    """
     while True:
         with condition:
             condition.wait()
+            with lock:
+                for sensor_number, temp_queue in temperature_queues.items():
+                    readings = list(temp_queue.queue)
+                    temperature_averages[sensor_number] = avg(readings)
 
-            for sensor_number in recorded_temps.keys():
-                temperature_avg[sensor_number] = avg(recorded_temps[sensor_number])
-
-def update_display(recorded_temps: dict, temperature_avg: dict) -> None:
+def update_latest_temp(latest_temperatures: dict[int, int], start_line: int) -> None:
     """
-        Continuously updates the console display with the latest temperature readings and averages.
-
-        The function retrieves and formats the most recent temperature readings and their
-        corresponding averages, then updates the console output without clearing the screen.
-
-        Args:
-            recorded_temps (dict): A dictionary mapping sensor IDs to lists of recorded temperatures.
-            temperature_avg (dict): A dictionary mapping sensor IDs to their computed average temperatures.
-
-        Synchronization:
-            - Uses `lock` to safely read from shared data structures.
-            - Prevents race conditions while retrieving temperature values.
-
-        Console Behavior:
-            - Uses ANSI escape sequences (`\033[F`) to update the output in place.
-            - Ensures a clean, readable format without overwriting new lines.
-        """
-    print("\n" * 100)
+    Updates and displays the latest temperature readings.
+    
+    Args:
+        latest_temperatures (dict[int, int]): Dictionary containing latest temperatures.
+        start_line (int): The starting line for updating the display.
+    
+    Returns:
+        None
+    """
     while True:
         with lock:
-            results = [
-                f"Current Temperatures:",
-                f"Latest Temperatures: "
-            ]
-
-            for i in range(len(recorded_temps)):
-                latest_temp = recorded_temps[i][-1] if recorded_temps[i] else "--"
-                avg_temp = f"{temperature_avg.get(i, '--'):.2f}" if isinstance(temperature_avg.get(i),
-                                                                               (int, float)) else "--"
-
-                results[1] += f"Sensor {i}: {latest_temp}°C  "
-                results.append(f"Sensor {i} Average: {avg_temp}°C")
-
-            sys.stdout.write("\033[F" * len(results))
-            sys.stdout.write("\r" + "\n".join(results) + "\n")
+            sys.stdout.write(f"\033[{start_line};0H")
+            sys.stdout.write("\033[K")
+            sys.stdout.write("Latest Temperatures: ")
+            
+            for sensor_id in latest_temperatures.keys():
+                latest_temp = latest_temperatures[sensor_id] if latest_temperatures[sensor_id] is not None else "--"
+                sys.stdout.write(f"Sensor {sensor_id}: {latest_temp}°C  ")
+            
+            sys.stdout.write("\n")
+            sys.stdout.write("\033[" + str(len(latest_temperatures)) + "B")
             sys.stdout.flush()
+        
         time.sleep(1)
+
+def update_avg_temps(temperature_averages: dict[int, float], start_line: int) -> None:
+    """
+    Updates and displays the average temperatures.
+    
+    Args:
+        temperature_averages (dict[int, float]): Dictionary containing temperature averages.
+        start_line (int): The starting line for updating the display.
+    
+    Returns:
+        None
+    """
+    while True:
+        with lock:
+            sys.stdout.write(f"\033[{start_line};0H")
+            sys.stdout.write("\033[K")
+            
+            for sensor_id in temperature_averages.keys():
+                avg_temp = f"{temperature_averages[sensor_id]:.2f}" if temperature_averages[sensor_id] > 0 else "--"
+                sys.stdout.write(f"Sensor {sensor_id} Average: {avg_temp}°C  ")
+                sys.stdout.write("\n")
+                
+            sys.stdout.write("\033[" + str(len(temperature_averages)) + "B")
+            sys.stdout.flush()
+        
+        time.sleep(5)
+
+def update_display(latest_temperatures: dict[int, int], temperature_averages: dict[int, float]) -> None:
+    """
+    Manages threads for updating the latest and average temperature displays.
+    
+    Args:
+        latest_temperatures (dict[int, int]): Dictionary containing latest temperatures.
+        temperature_averages (dict[int, float]): Dictionary containing temperature averages.
+    
+    Returns:
+        None
+    """
+    latest_temp_start_line = 4 
+    avg_temp_start_line = 5
+
+    threads = [
+        threading.Thread(target=update_latest_temp, args=(latest_temperatures, latest_temp_start_line), daemon=True),
+        threading.Thread(target=update_avg_temps, args=(temperature_averages, avg_temp_start_line), daemon=True)
+    ]
+
+    for thread in threads:
+        thread.start()
+
+    for thread in threads:
+        thread.join()
+
+def initialize_display(latest_temperatures: dict[int, int], temperature_averages: dict[int, float]) -> None:
+    """
+    Initializes the terminal display for temperature readings.
+    
+    Args:
+        latest_temperatures (dict[int, int]): Dictionary containing latest temperatures.
+        temperature_averages (dict[int, float]): Dictionary containing temperature averages.
+    
+    Returns:
+        None
+    """
+    print("Current temperatures:")
+    print("Latest Temperatures: ", end="")
+    for sensor_id in latest_temperatures.keys():
+        print(f"Sensor {sensor_id}: --°C ", end="")
+    print()
+    for sensor_id in temperature_averages.keys():
+        print(f"Sensor {sensor_id} Average: --°C ")
