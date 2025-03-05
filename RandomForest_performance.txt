@@ -1,0 +1,15 @@
+========== RandomForest Model Performance ==========
+Accuracy: 0.7209
+Recall: 0.6500
+F1 Score: 0.6842
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.72      0.78      0.75        23
+           1       0.72      0.65      0.68        20
+
+    accuracy                           0.72        43
+   macro avg       0.72      0.72      0.72        43
+weighted avg       0.72      0.72      0.72        43
+
