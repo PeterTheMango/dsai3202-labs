@@ -1,38 +1,45 @@
-import threading
-import queue
-from src.functions import simulate_sensor, process_temperatures, update_display, initialize_display
+import glob
+import multiprocessing
+from src.functions import read_images
+from src.sequential import run_sequential
+from src.parallel import run_parallel
+from src.features import extract_feature
+from src.splitting import split_data
+from src.train_test import train_models, test_models
+# Define the path to the dataset
+dataset_path = 'data/brain_tumor_dataset/'
 
-# Dictionary to store the temperature sensors.
-latest_temperatures = {}
-temperature_averages = {}
-temperature_queues = {} 
+# List all image files in the 'yes' and 'no' directories
+yes_images = glob.glob(dataset_path + 'yes/*.jpg')
+no_images = glob.glob(dataset_path + 'no/*.jpg')
 
-# Storing the threads.
-threads = []
+yes_images = read_images(yes_images)
+no_images = read_images(no_images)
 
-# Main Program
-if __name__ == "__main__":
-    # Deciding the number of sensors.
-    num_sensors = int(input("Enter the number of sensors: "))
- 
-    # Initializing the data.
-    for sensor_id in range(num_sensors):
-        latest_temperatures[sensor_id] = None
-        temperature_averages[sensor_id] = 0
-        temperature_queues[sensor_id] = queue.Queue()
+print(f"Number of 'yes' images: {len(yes_images)}")
+print(f"Number of 'no' images: {len(no_images)}")
 
-    # Starting the diplay.
-    initialize_display(latest_temperatures, temperature_averages)
+# Sequential Running
+#seq_time = run_sequential(yes_images, no_images)
+seq_time = 8253.132199048996
+print(f"Sequential Running: {seq_time}s")
 
-    # Adding the threads to the list.
-    threads.append(threading.Thread(target=simulate_sensor, args=(num_sensors, latest_temperatures, temperature_queues), daemon=True))
-    threads.append(threading.Thread(target=process_temperatures, args=(temperature_queues, temperature_averages), daemon=True))
-    threads.append(threading.Thread(target=update_display, args=(latest_temperatures, temperature_averages), daemon=True))
+# Parallel 
+par_time, yes_inputs, no_inputs = run_parallel(yes_images, no_images)
+print(f"Parallel Running: {par_time}")
 
-    # Starting the threads.
-    for thread in threads:
-        thread.start()
+num_cpu = multiprocessing.cpu_count() 
+speedup = seq_time / par_time
+efficiency = speedup / num_cpu
 
-    # Waiting for the threads to finish.
-    for thread in threads:
-        thread.join()
+print(f"Speedup: {speedup:.2f}x")
+print(f"Efficiency: {efficiency:.2f}")
+
+data, running_time = extract_feature(yes_inputs, no_inputs)
+X_train, X_test, y_train, y_test = split_data(data)
+
+models = train_models(X_train, y_train)
+
+for name, model in models.items():
+    test_models(name, model, X_test, y_test)
+
