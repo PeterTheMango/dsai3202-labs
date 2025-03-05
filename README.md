@@ -1,63 +1,95 @@
-# DSAI3202 - Lab 4, Part 1
-### Objectives:
-- Develop a Python program that simulates temperature readings from multiple sensors, calculates average temperatures, and displays the information in real-time in the console.  
+# DSAI3202 - Lab 4, Part 2
+## Objectives
+- Load the MRI images using OpenCV.
+- Implement parallel processing to efficiently handle image processing and model training.
+- Train a machine learning model for brain tumor classification.
+- Evaluate the performance of your model on a test set.
+
 ### Tasks:
-- Implement Sensor Simulation (***simulate_sensor*** function)
-	- Write a function called simulate_sensor that simulates temperature readings from a sensor.
-	- Use random.randint(15, 40) to generate random temperatures.
-	- Make simulate_sensor update a global dictionary latest_temperatures with its readings every second. 
-	- ![function](https://izsf0fvi1i.ufs.sh/f/X2JLT2PTUuxw8MRfhgr0eTvpDudEcyznl2hYmNa7iUSRXQIO)
-- Implement Data Processing
-	- Write a function called process_temperatures that continuously calculates the average temperature from readings placed in a queue. 
-	- Make process_temperatures update a global dictionary temperature_averages with the calculated averages.
-- Integrate Threading
-	- Create threads for each call simulate_sensor and the process_temperatures function.  
-	- Understand how to use daemon=True to manage thread lifecycle with the main program.  
-	- ![ProcessThreadFunction](https://izsf0fvi1i.ufs.sh/f/X2JLT2PTUuxwxONr6tcMrX6sYKmFaeqh0cNWP8pG9VdBvljk)
-- Implement Display Logic
-	- Write a function initialize_display to print the initial layout for displaying
-	- ![initial_display](https://izsf0fvi1i.ufs.sh/f/X2JLT2PTUuxwQHnYenTGcuHx4mkDJ2fAVlESOhzrtP9NqYwa)
-	- Develop update_display to refresh the latest temperatures and averages in place on the console without erasing the console.
-	- ![update_display](https://izsf0fvi1i.ufs.sh/f/X2JLT2PTUuxw8UGU66gr0eTvpDudEcyznl2hYmNa7iUSRXQI)
-- Synchronize Data Access
-	- Use  RLock  and  Condition  from the threading module to synchronize access to shared data structures and control the timing of updates. 
-- Finish building the Main Program and organize your files.
-	- Put the functions in a separate file.  
-	- Create a file for the maim program.  
-	- Initialize a queue and share data structures.  
-	- Start the sensors and data processors threads.  
-	- Initialize the console display and start the display update thread. Make the display updated every 5s.  
-	- Ensure the main thread keeps running to allow the daemon threads to operate.  
+- **Parallel execution:**
+        1. Create a separate function for each filter and write to be executed in parallel using either multiprocessing or multithreading.
+        ![filters](https://izsf0fvi1i.ufs.sh/f/X2JLT2PTUuxwxlviIb3cMrX6sYKmFaeqh0cNWP8pG9VdBvlj)
+        2. Use a multiprocessing or multithreading (*whatever you wish, from what you have learned in this course*) to manage parallel execution of the filter functions on the images and or the concurrent application on multiple images at the same time.
+        ![multiprocessing approach](https://izsf0fvi1i.ufs.sh/f/X2JLT2PTUuxw98EJ9hMdDvhl5AEZpe0Wkox3KJ4YHOrIwG2f)
+        3. Implement synchronization mechanisms to ensure safe access to shared resources.
+	 - Using apply_async().get() so that it wont move on until the image are done. Also using as_completed() to ensure that the process is done handling the image before moving onto the next.
+        ![Sync](https://izsf0fvi1i.ufs.sh/f/X2JLT2PTUuxwrIPr6LBiwnCOvcAKsW9MaXTu4dhYxQlqobNj)
+5. Measure the execution time of the parallel processing to compare it with the sequential execution.
+        ![execution_time](https://izsf0fvi1i.ufs.sh/f/X2JLT2PTUuxwsoHHXG8EOclQUXAvGw7KiYZCfrpL0oSW36n9)
 ### Questions:
-- **Which synchronization metric did you use for each of the tasks?**  
-	- `We should use RLock for the updating of temperatures and updating of display as this requires access to the data without it being edited to avoid race conditions. We should use Condition when updating the data to notify the process_temperature function that new data was added and should recalculate.`
-- **Why did the professor not ask you to compute metrics?**
-	- `Since have made the program with multithreading from the start and not improving a Sequential program, there is no need to compute for metrics in this exercise.`
+- Explain you parallelization?
+	- Using multiprocessing Pools for running the parallel execution of the process_images_parallel in order for one process is running for the YES images and one for the NO images.
+	- Using ThreadPoolExecutors and futures, we are able to separate each filter into their own thread and the filter will wait for the first filter to finish before moving on with the same image but can run on a new image.
+- Analyze the speedup and efficiency of the parallel execution. Discuss the results and any trade-offs encountered.
+	-	Speedup: 5.51x
+	-	Efficiency: 0.92
+	-	Trade-Offs: The more resources we use in terms of threading and multiprocessing, the more overhead we get. So I had to balnce between the use of multithreading and multiprocessing in terms of number of processes and threads made.
 
-### Assignment 1 Bonus 5%: 
+### Machine Learning Results
 
- - [x] Make the latest temperature updated every  1s, and the average temperatures update every 5s, in place. 
-> "It was not hard but it was annoying" 
-> \- PeterTheMango, at 11PM on 25/02/25 
-![update_avg](https://izsf0fvi1i.ufs.sh/f/X2JLT2PTUuxwuwwveLpPIDC7ys8GiKakvzEXhWBcHNUZm91l)
-![update_latest_temp](https://izsf0fvi1i.ufs.sh/f/X2JLT2PTUuxw9V8j40BMdDvhl5AEZpe0Wkox3KJ4YHOrIwG2)
-### Task Reflections
-> Why use Queues?
-	`To help keep sharing of global data between threads safe and less likely to be corrupted.`
-	
-> What did we get from implementing it a certain way?
-`Originally, I implemented it where the display is done all at the same time which is fine and probably helped with making it easy to update the display every X seconds. Seperating the updates into two different threads and functions helped me understand why RLocks and Conditions were efficient in the use cases mentioned above.`
+        ========== LogisticRegression Model Performance ==========
+    Accuracy: 0.6977
+    Recall: 0.7500
+    F1 Score: 0.6977
+    
+    Classification Report:
+                  precision    recall  f1-score   support
+    
+               0       0.75      0.65      0.70        23
+               1       0.65      0.75      0.70        20
+    
+        accuracy                           0.70        43
+       macro avg       0.70      0.70      0.70        43
+    weighted avg       0.70      0.70      0.70        43
 
-> Why is synchronizations important in the code?
-`It either leads to outdated data being used in the output which is caused by race conditions. It also ensures that we are not making edits to the data while one function is working on it.`
+    ========== MultiLayerPerceptron Model Performance ==========
+    Accuracy: 0.5581
+    Recall: 0.3000
+    F1 Score: 0.3871
+    
+    Classification Report:
+                  precision    recall  f1-score   support
+    
+               0       0.56      0.78      0.65        23
+               1       0.55      0.30      0.39        20
+    
+        accuracy                           0.56        43
+       macro avg       0.55      0.54      0.52        43
+    weighted avg       0.55      0.56      0.53        43
 
-> What can we do to improve?
-`Improving the output mechanics could be better because the cursor will flash positions when updating the average.`
+    ========== RandomForest Model Performance ==========
+    Accuracy: 0.7209
+    Recall: 0.6500
+    F1 Score: 0.6842
+    
+    Classification Report:
+                  precision    recall  f1-score   support
+    
+               0       0.72      0.78      0.75        23
+               1       0.72      0.65      0.68        20
+    
+        accuracy                           0.72        43
+       macro avg       0.72      0.72      0.72        43
+    weighted avg       0.72      0.72      0.72        43
+
+    ========== SVC Model Performance ==========
+    Accuracy: 0.6744
+    Recall: 0.8500
+    F1 Score: 0.7083
+    
+    Classification Report:
+                  precision    recall  f1-score   support
+    
+               0       0.80      0.52      0.63        23
+               1       0.61      0.85      0.71        20
+    
+        accuracy                           0.67        43
+       macro avg       0.70      0.69      0.67        43
+    weighted avg       0.71      0.67      0.67        43
+
 
 ### Acknowledgements
 
-> Claude and Blackbox (AI) helped me with the output formatting errors I was getting where it overlapped each other and deleted other lines.
+> ChatGPT 4o (AI) helped me in creating the docstrings for each of the functions and other ways to improve the multiprocessing.
 
-> ChatGPT 4o (AI) helped me in creating the docstrings for each of the functions.
 
-> StackOverflow for introducing me on how to use the `sys` package in order to update the outputs without clearing as well as the start of the unicode characters to move the cursor.  
