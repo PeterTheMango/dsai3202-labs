@@ -1,0 +1,8 @@
+pygame
+matplotlib 
+pandas
+numpy
+celery
+pyamqp
+pyyaml
+kombu
